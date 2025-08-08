@@ -161,15 +161,18 @@ class Game {
         this.life = 100;
         this.updateUI();
         
+        // 애니메이션 루프를 즉시 시작
+        this.animate();
+
         const audioLoader = new THREE.AudioLoader();
-        audioLoader.load('/Starlight Fever.mp3', (buffer) => {
+        // 변경된 파일 이름으로 오디오 로드
+        audioLoader.load('/StarlightFever.mp3', (buffer) => {
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
             this.sound.setVolume(0.5);
             this.sound.play();
-            this.animate();
         }, undefined, (error) => {
-            console.error(error);
+            console.error('Audio could not be loaded:', error);
         });
     }
     private onKeyPress(event: KeyboardEvent) {
