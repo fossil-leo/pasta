@@ -124,7 +124,9 @@ class Game {
             this.hitZoneMeshes.push(hitZoneMesh);
         });
         window.addEventListener('resize', this.onWindowResize.bind(this));
-        document.getElementById('start-button')!.addEventListener('click', this.startGame.bind(this));
+        document.getElementById('start-button')!.addEventListener('click', () => {
+            this.audioListener.context.resume().then(() => this.startGame());
+        });
         document.addEventListener('keydown', this.onKeyPress.bind(this));
     }
 
@@ -133,7 +135,7 @@ class Game {
         this.uiContainer.style.display = 'none';
     }
 
-    private async startGame() {
+    private startGame() {
         this.startScreen.classList.replace('d-flex', 'd-none');
 
         // Restore the UI container's original content
@@ -159,26 +161,16 @@ class Game {
         this.life = 100;
         this.updateUI();
         
-        try {
-            await this.audioListener.context.resume();
-        }
-        catch (e) {
-            console.error(e);
-            return;
-        }
         const audioLoader = new THREE.AudioLoader();
-        try {
-            const buffer = await audioLoader.loadAsync('/Starlight Fever.mp3');
+        audioLoader.load('/Starlight Fever.mp3', (buffer) => {
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
             this.sound.setVolume(0.5);
             this.sound.play();
-        }
-        catch (error) {
+            this.animate();
+        }, undefined, (error) => {
             console.error(error);
-            return;
-        }
-        this.animate();
+        });
     }
     private onKeyPress(event: KeyboardEvent) {
         if (this.isGameOver || event.repeat || !this.sound.isPlaying)
