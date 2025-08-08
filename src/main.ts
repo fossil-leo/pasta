@@ -166,7 +166,7 @@ class Game {
 
         const audioLoader = new THREE.AudioLoader();
         // 변경된 파일 이름으로 오디오 로드
-        audioLoader.load('/StarlightFever.mp3', (buffer) => {
+        audioLoader.load('StarlightFever.mp3', (buffer) => {
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
             this.sound.setVolume(0.5);
