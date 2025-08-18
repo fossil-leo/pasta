@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import './style.css';
 
 const LANE_KEYS = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
@@ -19,7 +16,7 @@ class Note {
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 1.5,
+            emissiveIntensity: 2.5,
             roughness: 0.5,
             metalness: 0.5,
         });
@@ -37,7 +34,6 @@ class Game {
     private scene: THREE.Scene;
     private camera: THREE.OrthographicCamera;
     private renderer: THREE.WebGLRenderer;
-    private composer: EffectComposer;
     private audioListener: THREE.AudioListener;
     private sound: THREE.Audio;
     private analyser: THREE.AudioAnalyser;
@@ -76,7 +72,6 @@ class Game {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.toneMapping = THREE.ReinhardToneMapping;
-        this.composer = new EffectComposer(this.renderer);
         this.audioListener = new THREE.AudioListener();
         this.camera.add(this.audioListener);
         this.sound = new THREE.Audio(this.audioListener);
@@ -94,18 +89,12 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x000000);
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.2));
-        const pointLight = new THREE.PointLight(0xffffff, 0.8);
+        this.scene.background = new THREE.Color(0x333333);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const pointLight = new THREE.PointLight(0xffffff, 2.5);
         pointLight.position.set(0, 5, 5);
         this.scene.add(pointLight);
-        const renderPass = new RenderPass(this.scene, this.camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
-        this.composer.addPass(renderPass);
-        this.composer.addPass(bloomPass);
+        
         const laneColors = [new THREE.Color(0xff00ff), new THREE.Color(0x00ff00), new THREE.Color(0xffff00), new THREE.Color(0xff0000)];
         this.lanePositions.forEach((x, i) => {
             const hitZoneGeo = new THREE.PlaneGeometry(LANE_WIDTH, 0.5);
@@ -114,9 +103,9 @@ class Game {
             const hitZoneMat = new THREE.MeshStandardMaterial({
                 color: color,
                 emissive: color,
-                emissiveIntensity: 0.5,
+                emissiveIntensity: 1.0,
                 transparent: true,
-                opacity: 0.4
+                opacity: 0.6
             });
             const hitZoneMesh = new THREE.Mesh(hitZoneGeo, hitZoneMat);
             hitZoneMesh.position.set(x, this.hitZoneY, 0);
@@ -128,11 +117,13 @@ class Game {
             this.audioListener.context.resume().then(() => this.startGame());
         });
         document.addEventListener('keydown', this.onKeyPress.bind(this));
+        this.displayHighScores();
     }
 
     private showStartScreen() {
         this.startScreen.classList.replace('d-none', 'd-flex');
         this.uiContainer.style.display = 'none';
+        this.displayHighScores();
     }
 
     private startGame() {
@@ -227,14 +218,59 @@ class Game {
         this.camera.bottom = -viewHeight / 2;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.composer.setSize(window.innerWidth, window.innerHeight);
     }
+
+    private getHighScores(): number[] {
+        const scoresJSON = localStorage.getItem('highScores');
+        return scoresJSON ? JSON.parse(scoresJSON) : [];
+    }
+
+    private saveHighScores(scores: number[]) {
+        localStorage.setItem('highScores', JSON.stringify(scores));
+    }
+
+    private displayHighScores() {
+        const container = document.getElementById('high-scores-container');
+        if (!container) return;
+
+        const highScores = this.getHighScores();
+        if (highScores.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let highScoresHTML = highScores.map((score, index) => `<li>${index + 1}. ${score}</li>`).join('');
+        container.innerHTML = `
+            <h2>High Scores</h2>
+            <ul class="list-unstyled">${highScoresHTML}</ul>
+        `;
+    }
+
     private handleGameOver() {
         this.isGameOver = true;
         if (this.sound.isPlaying) {
             this.sound.stop();
         }
-        this.uiContainer.innerHTML = `<h1 class="display-3 text-center">Game Over! Final Score: ${this.score}</h1><p class="text-center lead">Press Enter to return to the Lobby</p>`;
+
+        const highScores = this.getHighScores();
+        highScores.push(this.score);
+        highScores.sort((a, b) => b - a);
+        const newHighScores = highScores.slice(0, 5);
+        this.saveHighScores(newHighScores);
+
+        let highScoresHTML = newHighScores.map((score, index) => `<li>${index + 1}. ${score}</li>`).join('');
+
+        this.uiContainer.innerHTML = `
+            <div class="text-center">
+                <h1 class="display-3">Game Over!</h1>
+                <p class="lead">Final Score: ${this.score}</p>
+                <hr>
+                <h2>High Scores</h2>
+                <ul class="list-unstyled">${highScoresHTML}</ul>
+                <hr>
+                <p class="lead">Press Enter to return to the Lobby</p>
+            </div>`;
+
         this.uiContainer.style.display = 'block';
         this.keyDisplay.style.display = 'none';
         const onEnter = (event: KeyboardEvent) => {
@@ -275,7 +311,7 @@ class Game {
                 this.updateUI();
             }
         }
-        this.composer.render();
+        this.renderer.render(this.scene, this.camera);
     }
 }
 new Game();
