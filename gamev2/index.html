@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+        <meta charset="UTF-8" />
+    <link rel="icon" href="data:,">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body class="bg-dark text-white">
+    <div id="ui-container" class="container-fluid p-3 position-absolute top-0 start-0 w-100" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
+        </div>
+        <div>
+          <span class="h4 me-4">Life: <span id="life">100</span></span>
+          <span class="h4">Score: <span id="score">0</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="miss-notification" class="position-absolute top-50 start-50 translate-middle display-4" style="display: none; color: red; text-shadow: 2px 2px 4px #000;">MISS</div>
+
+    <div id="start-screen" class="d-flex justify-content-center align-items-center vh-100">
+        <div class="text-center">
+            <h1 class="display-1">Starlight Fever</h1>
+            <p class="lead">A Rhythm Fighting Game</p>
+            <button id="start-button" class="btn btn-primary btn-lg mb-4">Click to Start</button>
+            <div id="high-scores-container"></div>
+        </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="key-display" style="display: none;">
+      <div class="key">D</div>
+      <div class="key">F</div>
+      <div class="key">J</div>
+      <div class="key">K</div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
