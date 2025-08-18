@@ -12,21 +12,50 @@ class Note {
 
     constructor(lane: number, color: THREE.ColorRepresentation) {
         this.lane = lane;
-        const geometry = new THREE.BoxGeometry(LANE_WIDTH * 0.9, 0.5, 0.2);
+        const size = (LANE_WIDTH / 2.5) + (Math.random() * 0.1 - 0.05);
+        const geometry = new THREE.BoxGeometry(size, size, size);
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 2.5,
-            roughness: 0.5,
-            metalness: 0.5,
+            emissiveIntensity: 3,
+            roughness: 0.4,
+            metalness: 0.6,
         });
         this.mesh = new THREE.Mesh(geometry, material);
     }
 
     update(delta: number, speed: number) {
         this.mesh.position.y -= speed * delta;
-        this.mesh.rotation.x += delta * 0.5;
-        this.mesh.rotation.y += delta * 0.5;
+        this.mesh.rotation.x += delta;
+        this.mesh.rotation.y += delta;
+    }
+}
+
+class Particle {
+    mesh: THREE.Mesh;
+    velocity: THREE.Vector3;
+    lifespan: number;
+
+    constructor(position: THREE.Vector3, color: THREE.ColorRepresentation) {
+        const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            emissive: color,
+            emissiveIntensity: 5,
+        });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.copy(position);
+        this.velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 2
+        );
+        this.lifespan = Math.random() * 0.5 + 0.5;
+    }
+
+    update(delta: number) {
+        this.lifespan -= delta;
+        this.mesh.position.add(this.velocity.clone().multiplyScalar(delta));
     }
 }
 
@@ -49,6 +78,7 @@ class Game {
     private score = 0;
     private life = 100;
     private notes: Note[] = [];
+    private particles: Particle[] = [];
     private lanePositions: number[];
     private hitZoneMeshes: THREE.Mesh[] = [];
     private originalHitZoneColors: THREE.Color[] = [];
@@ -89,7 +119,7 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x333333);
+        this.scene.background = new THREE.Color(0x111111);
         this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
         const pointLight = new THREE.PointLight(0xffffff, 2.5);
         pointLight.position.set(0, 5, 5);
@@ -121,15 +151,8 @@ class Game {
     }
 
     private showStartScreen() {
-        this.startScreen.classList.replace('d-none', 'd-flex');
+        this.startScreen.style.display = 'flex';
         this.uiContainer.style.display = 'none';
-        this.displayHighScores();
-    }
-
-    private startGame() {
-        this.startScreen.classList.replace('d-flex', 'd-none');
-
-        // Restore the UI container's original content
         this.uiContainer.innerHTML = `
       <div class="d-flex justify-content-between align-items-center">
         <div>
@@ -140,8 +163,18 @@ class Game {
           <span class="h4">Score: <span id="score">0</span></span>
         </div>
       </div>`;
-        
-        // Re-acquire the element references
+        this.displayHighScores();
+    }
+
+    private startGame() {
+        // Clear previous game state
+        this.notes.forEach(note => this.scene.remove(note.mesh));
+        this.notes = [];
+        this.particles.forEach(particle => this.scene.remove(particle.mesh));
+        this.particles = [];
+
+        this.startScreen.style.display = 'none';
+
         this.scoreElement = document.getElementById('score')!;
         this.lifeElement = document.getElementById('life')!;
 
@@ -152,16 +185,13 @@ class Game {
         this.life = 100;
         this.updateUI();
         
-        // 애니메이션 루프를 즉시 시작
-        this.animate();
-
         const audioLoader = new THREE.AudioLoader();
-        // 변경된 파일 이름으로 오디오 로드
         audioLoader.load('StarlightFever.mp3', (buffer) => {
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
             this.sound.setVolume(0.5);
             this.sound.play();
+            this.animate();
         }, undefined, (error) => {
             console.error('Audio could not be loaded:', error);
         });
@@ -174,12 +204,12 @@ class Game {
             return;
         const hitZoneMesh = this.hitZoneMeshes[laneIndex];
         const material = hitZoneMesh.material as THREE.MeshStandardMaterial;
-        material.emissiveIntensity = 2.5;
+        material.emissiveIntensity = 4;
         material.opacity = 1.0;
         setTimeout(() => {
-            material.emissiveIntensity = 0.5;
-            material.opacity = 0.4;
-        }, 120);
+            material.emissiveIntensity = 1.0;
+            material.opacity = 0.6;
+        }, 150);
         const hitMin = this.hitZoneY - this.hitThreshold;
         const hitMax = this.hitZoneY + this.hitThreshold;
         for (let i = this.notes.length - 1; i >= 0; i--) {
@@ -188,11 +218,21 @@ class Game {
                 this.scene.remove(note.mesh);
                 this.notes.splice(i, 1);
                 this.score += 10;
+                this.createParticles(note.mesh.position, (material.emissive as THREE.Color));
                 this.updateUI();
                 break;
             }
         }
     }
+
+    private createParticles(position: THREE.Vector3, color: THREE.Color) {
+        for (let i = 0; i < 10; i++) {
+            const particle = new Particle(position, color);
+            this.particles.push(particle);
+            this.scene.add(particle.mesh);
+        }
+    }
+
     private updateUI() {
         this.scoreElement.textContent = this.score.toString();
         this.lifeElement.textContent = this.life.toString();
@@ -311,6 +351,16 @@ class Game {
                 this.updateUI();
             }
         }
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            particle.update(delta);
+            if (particle.lifespan <= 0) {
+                this.scene.remove(particle.mesh);
+                this.particles.splice(i, 1);
+            }
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 }
