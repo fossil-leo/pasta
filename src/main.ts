@@ -344,7 +344,20 @@ class Game {
         const time = this.clock.getElapsedTime();
         const freqData = this.analyser.getAverageFrequency();
 
-        if (freqData > this.beatThreshold && (time - this.lastBeatTime) > this.noteCooldown) {
+        const isReadyForNote = (time - this.lastBeatTime) > this.noteCooldown;
+        let shouldCreateNote = false;
+
+        if (time < 5.0) { // First 5 seconds: force notes on a steady beat
+            if (isReadyForNote) {
+                shouldCreateNote = true;
+            }
+        } else { // After 5 seconds: use original frequency logic
+            if (freqData > this.beatThreshold && isReadyForNote) {
+                shouldCreateNote = true;
+            }
+        }
+
+        if (shouldCreateNote) {
             this.lastBeatTime = time;
             const lane = Math.floor(Math.random() * NUM_LANES);
             const newNote = new Note(lane, this.originalHitZoneColors[lane]);
@@ -353,6 +366,7 @@ class Game {
             this.notes.push(newNote);
             this.scene.add(newNote.mesh);
         }
+
         for (let i = this.notes.length - 1; i >= 0; i--) {
             const note = this.notes[i];
             note.update(delta, this.noteSpeed);
