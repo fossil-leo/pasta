@@ -1,8 +1,5 @@
 import * as THREE from 'three';
 import './style.css';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 const LANE_KEYS = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
 const NUM_LANES = 4;
@@ -19,8 +16,6 @@ class Note {
         const geometry = new THREE.BoxGeometry(size, size, size);
         const material = new THREE.MeshStandardMaterial({
             color: color,
-            emissive: color,
-            emissiveIntensity: 2, // Reduced for less glow
             roughness: 0.4,
             metalness: 0.6,
         });
@@ -43,8 +38,6 @@ class Particle {
         const geometry = new THREE.SphereGeometry(0.1, 8, 8);
         const material = new THREE.MeshStandardMaterial({
             color: color,
-            emissive: color,
-            emissiveIntensity: 4, // Reduced for less glow
         });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.copy(position);
@@ -66,7 +59,6 @@ class Game {
     private scene: THREE.Scene;
     private camera: THREE.OrthographicCamera;
     private renderer: THREE.WebGLRenderer;
-    private composer: EffectComposer;
     private audioListener: THREE.AudioListener;
     private sound: THREE.Audio;
     private analyser: THREE.AudioAnalyser;
@@ -105,17 +97,6 @@ class Game {
         this.renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas') as HTMLCanvasElement, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.toneMapping = THREE.ReinhardToneMapping;
-        
-        const renderPass = new RenderPass(this.scene, this.camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 0.3; // Heavily reduced intensity
-        bloomPass.radius = 0.3;   // Heavily reduced radius
-
-        this.composer = new EffectComposer(this.renderer);
-        this.composer.addPass(renderPass);
-        this.composer.addPass(bloomPass);
 
         this.audioListener = new THREE.AudioListener();
         this.camera.add(this.audioListener);
@@ -134,12 +115,14 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x000000); // Darker background for neon
-        this.scene.fog = new THREE.Fog(0x000000, 10, 25);
+        this.scene.background = new THREE.Color(0x111111);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        const pointLight = new THREE.PointLight(0xffffff, 2.5);
+        pointLight.position.set(0, 5, 5);
+        this.scene.add(pointLight);
 
         const laneColors = [new THREE.Color(0xff00ff), new THREE.Color(0x00ff00), new THREE.Color(0xffff00), new THREE.Color(0xff0000)];
         
-        // Add Lane Lines
         const laneLineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
         const totalWidth = NUM_LANES * LANE_WIDTH + (NUM_LANES - 1) * LANE_GAP;
         for (let i = 0; i <= NUM_LANES; i++) {
@@ -156,8 +139,6 @@ class Game {
             this.originalHitZoneColors[i] = color;
             const hitZoneMat = new THREE.MeshStandardMaterial({
                 color: color,
-                emissive: color,
-                emissiveIntensity: 1.5, // Reduced for less glow
                 transparent: true,
                 opacity: 0.5,
                 side: THREE.DoubleSide
@@ -232,10 +213,8 @@ class Game {
         const material = hitZoneMesh.material as THREE.MeshStandardMaterial;
         
         // Flash effect
-        material.emissiveIntensity = 4; // Reduced flash
-        material.opacity = 1.0;
+        material.opacity = 0.9;
         setTimeout(() => {
-            material.emissiveIntensity = 1.5; // Reduced flash
             material.opacity = 0.5;
         }, 150);
 
@@ -245,7 +224,7 @@ class Game {
         for (let i = this.notes.length - 1; i >= 0; i--) {
             const note = this.notes[i];
             if (note.lane === laneIndex && note.mesh.position.y >= hitMin && note.mesh.position.y <= hitMax) {
-                this.createParticles(note.mesh.position, (material.emissive as THREE.Color));
+                this.createParticles(note.mesh.position, this.originalHitZoneColors[laneIndex]);
                 this.scene.remove(note.mesh);
                 this.notes.splice(i, 1);
                 this.score += 10;
@@ -256,7 +235,7 @@ class Game {
     }
 
     private createParticles(position: THREE.Vector3, color: THREE.Color) {
-        for (let i = 0; i < 15; i++) { // More particles
+        for (let i = 0; i < 15; i++) {
             const particle = new Particle(position, color);
             this.particles.push(particle);
             this.scene.add(particle.mesh);
@@ -288,7 +267,6 @@ class Game {
         this.camera.bottom = -viewHeight / 2;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.composer.setSize(window.innerWidth, window.innerHeight); // Resize composer
     }
 
     private getHighScores(): number[] {
@@ -394,7 +372,7 @@ class Game {
             }
         }
 
-        this.composer.render(); // Use composer to render
+        this.renderer.render(this.scene, this.camera);
     }
 }
 new Game();
