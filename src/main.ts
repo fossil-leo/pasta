@@ -241,7 +241,7 @@ class Game {
 
         const hitMin = this.hitZoneY - this.hitThreshold;
         const hitMax = this.hitZoneY + this.hitThreshold;
-        let noteHit = false;
+        
         for (let i = this.notes.length - 1; i >= 0; i--) {
             const note = this.notes[i];
             if (note.lane === laneIndex && note.mesh.position.y >= hitMin && note.mesh.position.y <= hitMax) {
@@ -250,7 +250,6 @@ class Game {
                 this.notes.splice(i, 1);
                 this.score += 10;
                 this.updateUI();
-                noteHit = true;
                 break; 
             }
         }
