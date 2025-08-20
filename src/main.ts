@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import './style.css';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 const LANE_KEYS = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
 const NUM_LANES = 4;
@@ -12,12 +15,12 @@ class Note {
 
     constructor(lane: number, color: THREE.ColorRepresentation) {
         this.lane = lane;
-        const size = (LANE_WIDTH / 2.5) + (Math.random() * 0.1 - 0.05);
+        const size = LANE_WIDTH / 2.5;
         const geometry = new THREE.BoxGeometry(size, size, size);
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 3,
+            emissiveIntensity: 5, // Increased for more glow
             roughness: 0.4,
             metalness: 0.6,
         });
@@ -26,8 +29,8 @@ class Note {
 
     update(delta: number, speed: number) {
         this.mesh.position.y -= speed * delta;
-        this.mesh.rotation.x += delta;
-        this.mesh.rotation.y += delta;
+        this.mesh.rotation.x += delta * 2;
+        this.mesh.rotation.y += delta * 2;
     }
 }
 
@@ -41,16 +44,16 @@ class Particle {
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 5,
+            emissiveIntensity: 8, // Increased for more glow
         });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.copy(position);
         this.velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 2,
-            (Math.random() - 0.5) * 2,
-            (Math.random() - 0.5) * 2
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 3
         );
-        this.lifespan = Math.random() * 0.5 + 0.5;
+        this.lifespan = Math.random() * 0.5 + 0.3;
     }
 
     update(delta: number) {
@@ -63,6 +66,7 @@ class Game {
     private scene: THREE.Scene;
     private camera: THREE.OrthographicCamera;
     private renderer: THREE.WebGLRenderer;
+    private composer: EffectComposer;
     private audioListener: THREE.AudioListener;
     private sound: THREE.Audio;
     private analyser: THREE.AudioAnalyser;
@@ -102,6 +106,17 @@ class Game {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.toneMapping = THREE.ReinhardToneMapping;
+        
+        const renderPass = new RenderPass(this.scene, this.camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 0.6; // Intensity of the bloom
+        bloomPass.radius = 0.4;   // Radius of the bloom effect
+
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(renderPass);
+        this.composer.addPass(bloomPass);
+
         this.audioListener = new THREE.AudioListener();
         this.camera.add(this.audioListener);
         this.sound = new THREE.Audio(this.audioListener);
@@ -119,13 +134,22 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x111111);
-        this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-        const pointLight = new THREE.PointLight(0xffffff, 2.5);
-        pointLight.position.set(0, 5, 5);
-        this.scene.add(pointLight);
-        
+        this.scene.background = new THREE.Color(0x000000); // Darker background for neon
+        this.scene.fog = new THREE.Fog(0x000000, 10, 25);
+
         const laneColors = [new THREE.Color(0xff00ff), new THREE.Color(0x00ff00), new THREE.Color(0xffff00), new THREE.Color(0xff0000)];
+        
+        // Add Lane Lines
+        const laneLineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+        const totalWidth = NUM_LANES * LANE_WIDTH + (NUM_LANES - 1) * LANE_GAP;
+        for (let i = 0; i <= NUM_LANES; i++) {
+            const x = -totalWidth / 2 + i * (LANE_WIDTH + LANE_GAP) - (LANE_WIDTH + LANE_GAP) / 2;
+            const points = [new THREE.Vector3(x, 10, -1), new THREE.Vector3(x, -10, -1)];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, laneLineMaterial);
+            this.scene.add(line);
+        }
+
         this.lanePositions.forEach((x, i) => {
             const hitZoneGeo = new THREE.PlaneGeometry(LANE_WIDTH, 0.5);
             const color = laneColors[i];
@@ -133,9 +157,10 @@ class Game {
             const hitZoneMat = new THREE.MeshStandardMaterial({
                 color: color,
                 emissive: color,
-                emissiveIntensity: 1.0,
+                emissiveIntensity: 2.5, // Increased for more glow
                 transparent: true,
-                opacity: 0.6
+                opacity: 0.5,
+                side: THREE.DoubleSide
             });
             const hitZoneMesh = new THREE.Mesh(hitZoneGeo, hitZoneMat);
             hitZoneMesh.position.set(x, this.hitZoneY, 0);
@@ -167,7 +192,6 @@ class Game {
     }
 
     private startGame() {
-        // Clear previous game state
         this.notes.forEach(note => this.scene.remove(note.mesh));
         this.notes = [];
         this.particles.forEach(particle => this.scene.remove(particle.mesh));
@@ -187,10 +211,12 @@ class Game {
         
         const audioLoader = new THREE.AudioLoader();
         audioLoader.load('StarlightFever.mp3', (buffer) => {
+            if (this.sound.isPlaying) this.sound.stop();
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
             this.sound.setVolume(0.5);
             this.sound.play();
+            this.clock.start();
             this.animate();
         }, undefined, (error) => {
             console.error('Audio could not be loaded:', error);
@@ -204,29 +230,34 @@ class Game {
             return;
         const hitZoneMesh = this.hitZoneMeshes[laneIndex];
         const material = hitZoneMesh.material as THREE.MeshStandardMaterial;
-        material.emissiveIntensity = 4;
+        
+        // Flash effect
+        material.emissiveIntensity = 8;
         material.opacity = 1.0;
         setTimeout(() => {
-            material.emissiveIntensity = 1.0;
-            material.opacity = 0.6;
+            material.emissiveIntensity = 2.5;
+            material.opacity = 0.5;
         }, 150);
+
         const hitMin = this.hitZoneY - this.hitThreshold;
         const hitMax = this.hitZoneY + this.hitThreshold;
+        let noteHit = false;
         for (let i = this.notes.length - 1; i >= 0; i--) {
             const note = this.notes[i];
             if (note.lane === laneIndex && note.mesh.position.y >= hitMin && note.mesh.position.y <= hitMax) {
+                this.createParticles(note.mesh.position, (material.emissive as THREE.Color));
                 this.scene.remove(note.mesh);
                 this.notes.splice(i, 1);
                 this.score += 10;
-                this.createParticles(note.mesh.position, (material.emissive as THREE.Color));
                 this.updateUI();
-                break;
+                noteHit = true;
+                break; 
             }
         }
     }
 
     private createParticles(position: THREE.Vector3, color: THREE.Color) {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 15; i++) { // More particles
             const particle = new Particle(position, color);
             this.particles.push(particle);
             this.scene.add(particle.mesh);
@@ -258,6 +289,7 @@ class Game {
         this.camera.bottom = -viewHeight / 2;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.composer.setSize(window.innerWidth, window.innerHeight); // Resize composer
     }
 
     private getHighScores(): number[] {
@@ -328,10 +360,12 @@ class Game {
         }
         if (this.isGameOver)
             return;
+            
         requestAnimationFrame(this.animate.bind(this));
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
         const freqData = this.analyser.getAverageFrequency();
+
         if (freqData > this.beatThreshold && (time - this.lastBeatTime) > this.noteCooldown) {
             this.lastBeatTime = time;
             const lane = Math.floor(Math.random() * NUM_LANES);
@@ -346,7 +380,7 @@ class Game {
             if (note.mesh.position.y < this.hitZoneY - this.hitThreshold) {
                 this.scene.remove(note.mesh);
                 this.notes.splice(i, 1);
-                this.life -= 1;
+                this.life -= 10; // More punishing
                 this.showMiss();
                 this.updateUI();
             }
@@ -361,7 +395,7 @@ class Game {
             }
         }
 
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render(); // Use composer to render
     }
 }
 new Game();
