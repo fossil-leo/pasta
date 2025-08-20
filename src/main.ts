@@ -12,8 +12,8 @@ class Note {
 
     constructor(lane: number, color: THREE.ColorRepresentation) {
         this.lane = lane;
-        const size = LANE_WIDTH / 2.5;
-        const geometry = new THREE.BoxGeometry(size, size, size);
+        // Changed to a rectangular shape
+        const geometry = new THREE.BoxGeometry(LANE_WIDTH * 0.8, 0.3, 0.2);
         const material = new THREE.MeshStandardMaterial({
             color: color,
             roughness: 0.4,
@@ -24,8 +24,7 @@ class Note {
 
     update(delta: number, speed: number) {
         this.mesh.position.y -= speed * delta;
-        this.mesh.rotation.x += delta * 2;
-        this.mesh.rotation.y += delta * 2;
+        // Removed rotation for a flatter look
     }
 }
 
@@ -80,7 +79,7 @@ class Game {
     private originalHitZoneColors: THREE.Color[] = [];
     private lastBeatTime = 0;
     private beatThreshold = 40;
-    private noteCooldown = 0.4;
+    private noteCooldown = 0.3; // Spawns notes more frequently
     private noteSpeed = 8;
 
     private hitZoneY = -4;
@@ -115,15 +114,17 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x111111);
-        this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-        const pointLight = new THREE.PointLight(0xffffff, 2.5);
+        this.scene.background = new THREE.Color(0x282c34); // A neutral dark grey
+        
+        // Drastically reduced lighting
+        this.scene.add(new THREE.AmbientLight(0x404040, 1.0)); 
+        const pointLight = new THREE.PointLight(0xffffff, 0.5);
         pointLight.position.set(0, 5, 5);
         this.scene.add(pointLight);
 
         const laneColors = [new THREE.Color(0xff00ff), new THREE.Color(0x00ff00), new THREE.Color(0xffff00), new THREE.Color(0xff0000)];
         
-        const laneLineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+        const laneLineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 });
         const totalWidth = NUM_LANES * LANE_WIDTH + (NUM_LANES - 1) * LANE_GAP;
         for (let i = 0; i <= NUM_LANES; i++) {
             const x = -totalWidth / 2 + i * (LANE_WIDTH + LANE_GAP) - (LANE_WIDTH + LANE_GAP) / 2;
@@ -140,7 +141,7 @@ class Game {
             const hitZoneMat = new THREE.MeshStandardMaterial({
                 color: color,
                 transparent: true,
-                opacity: 0.5,
+                opacity: 0.4,
                 side: THREE.DoubleSide
             });
             const hitZoneMesh = new THREE.Mesh(hitZoneGeo, hitZoneMat);
@@ -215,7 +216,7 @@ class Game {
         // Flash effect
         material.opacity = 0.9;
         setTimeout(() => {
-            material.opacity = 0.5;
+            material.opacity = 0.4;
         }, 150);
 
         const hitMin = this.hitZoneY - this.hitThreshold;
@@ -347,7 +348,8 @@ class Game {
             this.lastBeatTime = time;
             const lane = Math.floor(Math.random() * NUM_LANES);
             const newNote = new Note(lane, this.originalHitZoneColors[lane]);
-            newNote.mesh.position.set(this.lanePositions[lane], this.camera.top + 1, 0);
+            // Spawning notes higher up to give more reaction time
+            newNote.mesh.position.set(this.lanePositions[lane], this.camera.top + 4, 0);
             this.notes.push(newNote);
             this.scene.add(newNote.mesh);
         }
