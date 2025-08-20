@@ -2,7 +2,7 @@
   "name": "rhythm-game-setup",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://fossil-leo.github.io/leo",
+  "homepage": "https://fossil-leo.github.io/pasta",
   "type": "module",
   "scripts": {
     "dev": "vite",

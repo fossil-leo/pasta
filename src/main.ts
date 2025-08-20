@@ -66,7 +66,7 @@ class Game {
     private startScreen: HTMLElement;
     private uiContainer: HTMLElement;
     private scoreElement: HTMLElement;
-    private lifeElement: HTMLElement;
+    private lifeBarElement: HTMLElement; // Added for the visual health bar
     private missElement: HTMLElement;
     private keyDisplay: HTMLElement;
 
@@ -80,7 +80,7 @@ class Game {
     private lastBeatTime = 0;
     private beatThreshold = 40;
     private noteCooldown = 0.3; // Spawns notes more frequently
-    private noteSpeed = 8;
+    private noteSpeed = 5;
 
     private hitZoneY = -4;
     private hitThreshold = 0.5;
@@ -105,7 +105,6 @@ class Game {
         this.startScreen = document.getElementById('start-screen')!;
         this.uiContainer = document.getElementById('ui-container')!;
         this.scoreElement = document.getElementById('score')!;
-        this.lifeElement = document.getElementById('life')!;
         this.missElement = document.getElementById('miss-notification')!;
         this.keyDisplay = document.getElementById('key-display')!;
         const totalWidth = NUM_LANES * LANE_WIDTH + (NUM_LANES - 1) * LANE_GAP;
@@ -114,11 +113,10 @@ class Game {
     }
     private init() {
         this.camera.position.z = 10;
-        this.scene.background = new THREE.Color(0x282c34); // A neutral dark grey
+        this.scene.background = new THREE.Color(0x333333); // Brighter background
         
-        // Drastically reduced lighting
-        this.scene.add(new THREE.AmbientLight(0x404040, 1.0)); 
-        const pointLight = new THREE.PointLight(0xffffff, 0.5);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 1.0)); 
+        const pointLight = new THREE.PointLight(0xffffff, 1.5);
         pointLight.position.set(0, 5, 5);
         this.scene.add(pointLight);
 
@@ -160,16 +158,6 @@ class Game {
     private showStartScreen() {
         this.startScreen.style.display = 'flex';
         this.uiContainer.style.display = 'none';
-        this.uiContainer.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
-        </div>
-        <div>
-          <span class="h4 me-4">Life: <span id="life">100</span></span>
-          <span class="h4">Score: <span id="score">0</span></span>
-        </div>
-      </div>`;
         this.displayHighScores();
     }
 
@@ -181,8 +169,25 @@ class Game {
 
         this.startScreen.style.display = 'none';
 
+        // Force-recreate the UI every time a game starts, now with a styled score panel
+        this.uiContainer.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
+            </div>
+            <div class="d-flex align-items-center">
+              <span class="h4 me-2">Life:</span>
+              <div id="life-bar-container" style="width: 150px; height: 20px; border: 1px solid white; border-radius: 5px; background-color: #555;">
+                <div id="life-bar" style="width: 100%; height: 100%; background-color: #00ff00; border-radius: 4px; transition: width 0.1s linear, background-color 0.5s linear;"></div>
+              </div>
+              <div id="score-panel" class="ms-4" style="background-color: rgba(0,0,0,0.3); border: 1px solid white; padding: 5px 10px; border-radius: 5px;">
+                <span class="h4 mb-0">Score: <span id="score">0</span></span>
+              </div>
+            </div>
+          </div>`;
+        
         this.scoreElement = document.getElementById('score')!;
-        this.lifeElement = document.getElementById('life')!;
+        this.lifeBarElement = document.getElementById('life-bar')!;
 
         this.uiContainer.style.display = 'block';
         this.keyDisplay.style.display = 'flex';
@@ -244,8 +249,22 @@ class Game {
     }
 
     private updateUI() {
-        this.scoreElement.textContent = this.score.toString();
-        this.lifeElement.textContent = this.life.toString();
+        if (this.scoreElement) {
+            this.scoreElement.textContent = this.score.toString();
+        }
+        if (this.lifeBarElement) {
+            // Update life bar width
+            this.lifeBarElement.style.width = this.life + '%';
+
+            // Update life bar color based on life percentage
+            if (this.life > 60) {
+                this.lifeBarElement.style.backgroundColor = '#00ff00'; // green
+            } else if (this.life > 30) {
+                this.lifeBarElement.style.backgroundColor = '#ffff00'; // yellow
+            } else {
+                this.lifeBarElement.style.backgroundColor = '#ff0000'; // red
+            }
+        }
         if (this.life <= 0 && !this.isGameOver) {
             this.handleGameOver();
         }
@@ -373,7 +392,7 @@ class Game {
             if (note.mesh.position.y < this.hitZoneY - this.hitThreshold) {
                 this.scene.remove(note.mesh);
                 this.notes.splice(i, 1);
-                this.life -= 10; // More punishing
+                this.life -= 2; // Less punishing
                 this.showMiss();
                 this.updateUI();
             }
