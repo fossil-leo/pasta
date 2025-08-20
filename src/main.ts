@@ -20,7 +20,7 @@ class Note {
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 5, // Increased for more glow
+            emissiveIntensity: 2, // Reduced for less glow
             roughness: 0.4,
             metalness: 0.6,
         });
@@ -44,7 +44,7 @@ class Particle {
         const material = new THREE.MeshStandardMaterial({
             color: color,
             emissive: color,
-            emissiveIntensity: 8, // Increased for more glow
+            emissiveIntensity: 4, // Reduced for less glow
         });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.copy(position);
@@ -110,8 +110,8 @@ class Game {
         const renderPass = new RenderPass(this.scene, this.camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0;
-        bloomPass.strength = 0.6; // Intensity of the bloom
-        bloomPass.radius = 0.4;   // Radius of the bloom effect
+        bloomPass.strength = 0.3; // Heavily reduced intensity
+        bloomPass.radius = 0.3;   // Heavily reduced radius
 
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderPass);
@@ -157,7 +157,7 @@ class Game {
             const hitZoneMat = new THREE.MeshStandardMaterial({
                 color: color,
                 emissive: color,
-                emissiveIntensity: 2.5, // Increased for more glow
+                emissiveIntensity: 1.5, // Reduced for less glow
                 transparent: true,
                 opacity: 0.5,
                 side: THREE.DoubleSide
@@ -232,10 +232,10 @@ class Game {
         const material = hitZoneMesh.material as THREE.MeshStandardMaterial;
         
         // Flash effect
-        material.emissiveIntensity = 8;
+        material.emissiveIntensity = 4; // Reduced flash
         material.opacity = 1.0;
         setTimeout(() => {
-            material.emissiveIntensity = 2.5;
+            material.emissiveIntensity = 1.5; // Reduced flash
             material.opacity = 0.5;
         }, 150);
 
