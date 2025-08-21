@@ -162,17 +162,7 @@ class Game {
     }
 
     private startGame() {
-        const testDiv = document.createElement('div');
-        testDiv.id = 'gemini-test-div';
-        testDiv.textContent = 'TEST';
-        testDiv.style.position = 'fixed';
-        testDiv.style.top = '10px';
-        testDiv.style.left = '10px';
-        testDiv.style.padding = '10px';
-        testDiv.style.backgroundColor = 'red';
-        testDiv.style.zIndex = '9999';
-        document.body.appendChild(testDiv);
-
+        alert('Game Start!');
         this.notes.forEach(note => this.scene.remove(note.mesh));
         this.notes = [];
         this.particles.forEach(particle => this.scene.remove(particle.mesh));
