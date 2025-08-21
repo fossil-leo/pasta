@@ -171,17 +171,17 @@ class Game {
 
         // Force-recreate the UI every time a game starts, now with a styled score panel
         this.uiContainer.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex justify-content-between align-items-center p-3" style="background-color: rgba(0, 0, 0, 0.5);">
             <div>
               <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
             </div>
             <div class="d-flex align-items-center">
-              <span class="h4 me-2">Life:</span>
-              <div id="life-bar-container" style="width: 150px; height: 20px; border: 1px solid white; border-radius: 5px; background-color: #555;">
+              <span class="h2 me-3">Life:</span>
+              <div id="life-bar-container" style="width: 200px; height: 25px; border: 2px solid white; border-radius: 5px; background-color: #555;">
                 <div id="life-bar" style="width: 100%; height: 100%; background-color: #00ff00; border-radius: 4px; transition: width 0.1s linear, background-color 0.5s linear;"></div>
               </div>
-              <div id="score-panel" class="ms-4" style="background-color: rgba(0,0,0,0.3); border: 1px solid white; padding: 5px 10px; border-radius: 5px;">
-                <span class="h4 mb-0">Score: <span id="score">0</span></span>
+              <div id="score-panel" class="ms-5" style="background-color: rgba(0,0,0,0.3); border: 2px solid white; padding: 10px 15px; border-radius: 5px;">
+                <span class="h2 mb-0">Score: <span id="score">0</span></span>
               </div>
             </div>
           </div>`;
