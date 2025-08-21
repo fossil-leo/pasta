@@ -189,7 +189,7 @@ class Game {
         this.scoreElement = document.getElementById('score')!;
         this.lifeBarElement = document.getElementById('life-bar')!;
 
-        this.uiContainer.style.display = 'block';
+        this.uiContainer.style.setProperty('display', 'block', 'important');
         this.keyDisplay.style.display = 'flex';
         this.isGameOver = false;
         this.score = 0;
@@ -340,7 +340,7 @@ class Game {
                 <p class="lead">Press Enter to return to the Lobby</p>
             </div>`;
 
-        this.uiContainer.style.display = 'block';
+        this.uiContainer.style.setProperty('display', 'block', 'important');
         this.keyDisplay.style.display = 'none';
         const onEnter = (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
