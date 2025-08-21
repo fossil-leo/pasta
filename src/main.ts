@@ -171,7 +171,7 @@ class Game {
 
         // Force-recreate the UI every time a game starts, now with a styled score panel
         this.uiContainer.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center p-3" style="background-color: rgba(0, 0, 0, 0.5);">
+          <div class="d-flex justify-content-between align-items-center p-3" style="background-color: rgba(255, 0, 0, 0.8) !important; z-index: 9999 !important;">
             <div>
               <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
             </div>
