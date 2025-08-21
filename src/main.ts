@@ -162,7 +162,6 @@ class Game {
     }
 
     private startGame() {
-        alert('Game Start!');
         this.notes.forEach(note => this.scene.remove(note.mesh));
         this.notes = [];
         this.particles.forEach(particle => this.scene.remove(particle.mesh));
@@ -198,7 +197,7 @@ class Game {
         this.updateUI();
         
         const audioLoader = new THREE.AudioLoader();
-        audioLoader.load('StarlightFever.mp3', (buffer) => {
+        audioLoader.load('/pasta/StarlightFever.mp3', (buffer) => {
             if (this.sound.isPlaying) this.sound.stop();
             this.sound.setBuffer(buffer);
             this.sound.setLoop(false);
