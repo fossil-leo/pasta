@@ -7,18 +7,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/pasta/assets/index-DK8Y5Y_B.js"></script>
-    <link rel="stylesheet" crossorigin href="/pasta/assets/index-DWrxIrS_.css">
+    <script type="module" crossorigin src="/pasta/assets/index-8tnU5c2Q.js"></script>
+    <link rel="stylesheet" crossorigin href="/pasta/assets/index-BQE6Y158.css">
   </head>
   <body class="bg-dark text-white">
     <div id="ui-container" class="container-fluid p-3 position-absolute top-0 start-0 w-100" style="display: none;">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex justify-content-between align-items-center p-3" style="background-color: rgba(0, 0, 0, 0.5); border-radius: 10px;">
         <div>
-          <h1 id="song-title" class="h4">Now Playing: Starlight Fever</h1>
+          <h1 id="song-title" class="h4 text-white">Now Playing: Starlight Fever</h1>
         </div>
-        <div>
-          <span class="h4 me-4">Life: <span id="life">100</span></span>
-          <span class="h4">Score: <span id="score">0</span></span>
+        <div class="d-flex align-items-center">
+          <span class="h4 me-3 text-white">Life:</span>
+          <div id="life-bar-container" style="width: 200px; height: 25px; border: 2px solid white; border-radius: 5px; background-color: #555;">
+            <div id="life-bar" style="width: 100%; height: 100%; background-color: #00ff00; border-radius: 4px; transition: width 0.1s linear, background-color 0.5s linear;"></div>
+          </div>
+          <div id="score-panel" class="ms-5" style="background-color: rgba(0,0,0,0.3); border: 2px solid white; padding: 10px 15px; border-radius: 5px;">
+            <span class="h4 mb-0 text-white">Score: <span id="score">0</span></span>
+          </div>
         </div>
       </div>
     </div>
@@ -42,6 +47,6 @@
       <div class="key">J</div>
       <div class="key">K</div>
     </div>
-
+
   </body>
 </html>
